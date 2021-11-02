@@ -121,7 +121,7 @@ The third plot exhibits the relationship between real gdp per capita and country
 
 #### Concluding Remarks
 
-My expectations were partially correct. I correctly expected real gdp to grow as human capital index increases; however, the share of labor compensation stayed fairly stable throughout the years when I actually expected it to decrease as time passed. 
+My expectations were partially met. I correctly expected real gdp to grow as human capital index increases; however, the share of labor compensation stayed fairly stable throughout the years when I actually expected it to decrease as time passed. 
 
 
 

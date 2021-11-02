@@ -1538,7 +1538,7 @@ div.tocify {
 <div id="introduction" class="section level4">
 <h4>Introduction</h4>
 <p>One of the datasets I chose was a sample from “Penn World Table (9.1) Macroeconomic Data for Select Countries, 1950-2017” with variables: country, isocode, year, human capital, real gdp, and share of labor compensation. The other dataset I chose was “Yearly populations of countries from 1960 to 2017” with variables: country, country code 1, country code 2, year, and population. I will be analyzing the datat from 2000-2017. I found both these datasets on <a href="https://vincentarelbundock.github.io/Rdatasets/datasets.html" class="uri">https://vincentarelbundock.github.io/Rdatasets/datasets.html</a>, which was on the Project 1 directions page.</p>
-<p>I chose these two datasets because “country” was a common variable of theirs. I wanted to see if there ws correlation between population, or change in population, and different measures of economic health (human capital, real gdp, etc.). I’m also interested in how these metrics have changed throughout the years and if some countries seem to be “progressing” economically faster than others. Most importantly, I want to identify the 21st century leaders in some of these categories. This analysis will help me gauge which ones within this pool of countries deemed “rich” have, on paper, performed the best economically so that maybe I could study their economic models and see how their strengths can be implemented in other countries. I expect real gdp to grow with population increase, while share of labor compensation and human capital decrease with population increase.</p>
+<p>I chose these two datasets because “country” was a common variable of theirs. I wanted to see if there ws correlation between population, or change in population, and different measures of economic health (human capital, real gdp, etc.). I’m also interested in how these metrics have changed throughout the years and if some countries seem to be “progressing” economically faster than others. Most importantly, I want to identify the 21st century leaders in some of these categories. This analysis will help me gauge which ones within this pool of countries deemed “rich” have, on paper, performed the best economically so that maybe I could study their economic models and see how their strengths can be implemented in other countries. I expect real gdp to grow with human capital index increase, while share of labor compensation slowly decreases over the years.</p>
 <pre class="r"><code>library(tidyverse)
 library(cluster)
 library(ggplot2)
@@ -1649,7 +1649,7 @@ pwt %&gt;% left_join(cpops, by = c(&quot;year&quot;, &quot;country&quot;)) %&gt;
     na.omit
 nrow(pwt)</code></pre>
 <pre><code>## [1] 1160</code></pre>
-<p>countrypops has 12470 observations while pwt_sample has 1428 observations. countrypops has 215 different countries while pwt_sample has 21 different countries. countrypops has 195 different countries that pwt_sample doesn’t have, while pwt_sample has 1 country that countrypops doesn’t have. The two datasets have 20 countries in common. The joined dataset, pwt, has 1160 observations, which is 268 less than that of pwt_sample and 11310 less than that of countrypops. No observations were dropped as a result of the joining.</p>
+<p>countrypops has 12470 observations while pwt_sample has 1428 observations. countrypops has 215 different countries while pwt_sample has 21 different countries. countrypops has 195 different countries that pwt_sample doesn’t have, while pwt_sample has 1 country that countrypops doesn’t have (USA). The two datasets have 20 countries in common. The joined dataset, pwt, has 1160 observations, which is 268 less than that of pwt_sample and 11310 less than that of countrypops. No observations were dropped as a result of the joining.</p>
 </div>
 <div id="wrangling" class="section level4">
 <h4>Wrangling</h4>
@@ -1710,6 +1710,28 @@ pwt1 %&gt;% group_by(country) %&gt;% summarise(mean = mean(gdp_cap)) %&gt;%
 ##   country              sd
 ##   &lt;chr&gt;             &lt;dbl&gt;
 ## 1 United Kingdom 2348507.</code></pre>
+<pre class="r"><code>pwt1 %&gt;% group_by(year) %&gt;% summarise(min(labsh), max(labsh))  # checking min and max labsh for each year to identify trends (decreasing min, max stays about same)</code></pre>
+<pre><code>## # A tibble: 18 x 3
+##     year `min(labsh)` `max(labsh)`
+##    &lt;dbl&gt;        &lt;dbl&gt;        &lt;dbl&gt;
+##  1  2000        0.480        0.657
+##  2  2001        0.469        0.668
+##  3  2002        0.440        0.685
+##  4  2003        0.449        0.676
+##  5  2004        0.457        0.659
+##  6  2005        0.431        0.671
+##  7  2006        0.385        0.690
+##  8  2007        0.384        0.683
+##  9  2008        0.431        0.637
+## 10  2009        0.440        0.673
+## 11  2010        0.440        0.651
+## 12  2011        0.440        0.640
+## 13  2012        0.440        0.651
+## 14  2013        0.440        0.650
+## 15  2014        0.432        0.644
+## 16  2015        0.331        0.670
+## 17  2016        0.339        0.662
+## 18  2017        0.329        0.651</code></pre>
 <pre class="r"><code>pwt1 %&gt;% group_by(country) %&gt;% summarise(cor(rgdpna, hc)) %&gt;% 
     kable()  # correlation between rgdp and hc by country</code></pre>
 <table>
@@ -1886,28 +1908,18 @@ United Kingdom
 </tr>
 </tbody>
 </table>
-<pre class="r"><code>pwt1 %&gt;% group_by(year) %&gt;% summarise(min(labsh), max(labsh))  # checking min and max labsh for each year to identify trends (decreasing min, max stays about same)</code></pre>
-<pre><code>## # A tibble: 18 x 3
-##     year `min(labsh)` `max(labsh)`
-##    &lt;dbl&gt;        &lt;dbl&gt;        &lt;dbl&gt;
-##  1  2000        0.480        0.657
-##  2  2001        0.469        0.668
-##  3  2002        0.440        0.685
-##  4  2003        0.449        0.676
-##  5  2004        0.457        0.659
-##  6  2005        0.431        0.671
-##  7  2006        0.385        0.690
-##  8  2007        0.384        0.683
-##  9  2008        0.431        0.637
-## 10  2009        0.440        0.673
-## 11  2010        0.440        0.651
-## 12  2011        0.440        0.640
-## 13  2012        0.440        0.651
-## 14  2013        0.440        0.650
-## 15  2014        0.432        0.644
-## 16  2015        0.331        0.670
-## 17  2016        0.339        0.662
-## 18  2017        0.329        0.651</code></pre>
+<pre class="r"><code>pwt1 %&gt;% summarise_all(function(x) sum(is.na(x)))  # there are no NAs present in the dataset</code></pre>
+<pre><code>## # A tibble: 1 x 7
+##   country  year    hc rgdpna labsh population gdp_cap
+##     &lt;int&gt; &lt;int&gt; &lt;int&gt;  &lt;int&gt; &lt;int&gt;      &lt;int&gt;   &lt;int&gt;
+## 1       0     0     0      0     0          0       0</code></pre>
+<pre class="r"><code>unique(pwt1$country) %&gt;% str_detect(pattern = &quot;^[S]&quot;) %&gt;% sum()  # 3 countries have names beginning with &#39;S.&#39;</code></pre>
+<pre><code>## [1] 3</code></pre>
+<pre class="r"><code>str</code></pre>
+<pre><code>## function (object, ...) 
+## UseMethod(&quot;str&quot;)
+## &lt;bytecode: 0x561921eb2d20&gt;
+## &lt;environment: namespace:utils&gt;</code></pre>
 <pre class="r"><code>pwt1 %&gt;% group_by(year) %&gt;% summarise(n())  #18 diff years</code></pre>
 <pre><code>## # A tibble: 18 x 2
 ##     year `n()`
@@ -2004,6 +2016,7 @@ pivot_longer(pwt2, cols = c(&quot;Australia&quot;:&quot;United Kingdom&quot;), n
 ## 18  2017         0.567</code></pre>
 <p>All data is already tidied, including summarized data, so I untidied the standard deviations of populations by country using pivot_wider, then tidied the data by using pivot_longer at the end of this chunk.</p>
 <p>For my analyses I mostly grouped the summaries by country because the main goal of my analysis was to identify the countries that were better than others in certain economic categories since 2000. I summarized the mean gdp per capita, a good measure of standard of living, which helped me identify that Switzerland seemed to have the highest standard of living. Human capital essentially index measures how economically and professionally productive a country’s population is. From my summary, the United Kingdom had the greatest mean human capital index, thus its people were the most economically and professionally productive. Real gdp essentially indicates how much production a country has or how much goods and services it provides. This is a good measure of the overall health of an economy. from my summary, Japan seems to have the healthiest economy while Iceland has the least healthy economy of the countries listed. Also, among most countries in the analysis, there seemed to be strong correlation between real gdp and human capital index, which was expected.</p>
+<p>I also used string_detect and regex to figure out that 3 countries have names beginning with the letter “S”</p>
 </div>
 <div id="visualizing" class="section level4">
 <h4>Visualizing</h4>
@@ -2029,7 +2042,7 @@ pivot_longer(pwt2, cols = c(&quot;Australia&quot;:&quot;United Kingdom&quot;), n
 </div>
 <div id="concluding-remarks" class="section level4">
 <h4>Concluding Remarks</h4>
-<p>If any!</p>
+<p>My expectations were partially met. I correctly expected real gdp to grow as human capital index increases; however, the share of labor compensation stayed fairly stable throughout the years when I actually expected it to decrease as time passed.</p>
 </div>
 </div>
 </div>
