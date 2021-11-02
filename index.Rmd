@@ -30,7 +30,8 @@ I chose these two datasets because "country" was a common variable of theirs. I 
 ```{R}
 library(tidyverse)
 library(cluster)
-library(ggplot2)
+library(ggplot2) 
+library(kableExtra)
 # read your datasets in here, e.g., with read_csv()
 countrypops <- read_csv("https://vincentarelbundock.github.io/Rdatasets/csv/gt/countrypops.csv")
 pwt_sample <- read_csv("https://vincentarelbundock.github.io/Rdatasets/csv/stevedata/pwt_sample.csv")
@@ -57,9 +58,10 @@ countrypops %>% rename(country=country_name) %>% select(country)%>% anti_join(pw
 (pwt_sample %>% select(country)) %>% anti_join(countrypops %>% rename(country=country_name)) %>% distinct(country) #pwt has 1 unique country (USA)
 countrypops %>% rename(country=country_name) %>% select(country)%>% inner_join(pwt_sample %>% select(country)) %>% distinct(country)
 
-pwt <- pwt_new %>% select(-pop) %>% arrange(desc(year))
-pwt %>% left_join(cpops) %>% summarise_all(function(x)sum(is.na(x)))
-pwt %>% left_join(cpops) %>% na.omit -> pwt
+cpops <- countrypops %>% rename(country=country_name) %>% rename(x=X1) %>% select(-country_code_2, -country_code_3, -x)
+pwt <- pwt_sample %>% rename(x=X1)  %>% select(-isocode, -pop, -x)
+pwt %>% left_join(cpops, by=c("year", "country")) %>% summarise_all(function(x)sum(is.na(x)))
+pwt %>% left_join(cpops, by=c("year", "country")) %>% na.omit -> pwt
 nrow(pwt)
 ```
 
@@ -68,9 +70,7 @@ countrypops has 12470 observations while pwt_sample has 1428 observations. count
 ####  Wrangling
 
 ```{R}
-cpops <- countrypops %>% rename(country=country_name) %>% select(-country_code_2, -country_code_3)
-pwt_new <- pwt_sample %>% select(-isocode, -X1)
-pwt1 <- pwt %>% select(-X1) %>% filter(year>=2000) %>% mutate(gdp_cap = rgdpna/population) %>% arrange(-desc(country), -desc(year)) # gdp_cap to compare the rates at which gdp and pop are changing
+pwt1 <- pwt %>% filter(year>=2000) %>% mutate(gdp_cap = rgdpna/population) %>% arrange(-desc(country), -desc(year)) # gdp_cap to compare the rates at which gdp and pop are changing
 pwt1 %>% group_by(country) %>% summarise(mean=mean(gdp_cap)) %>% arrange(desc(mean))# mean gdp per capita by country (good measure of standard of living)
 pwt1 %>% group_by(country) %>% summarise(mean = mean(hc)) %>% slice_max(mean) # country with highest mean human capital (UK)
 pwt1 %>% group_by(country) %>% summarise(mean = mean(hc)) %>% slice_min(mean) # country with lowest mean human capital (Portugal)
@@ -86,7 +86,7 @@ pwt1 %>% group_by(country) %>% summarise(n()) # 20 diff countries
 pwt1 %>% group_by(country) %>% summarise(sd=sd(population)) %>% pivot_wider(names_from = country, values_from=sd) -> pwt2
 pivot_longer(pwt2, cols=c("Australia":"United Kingdom"), names_to = "country")
 
-pwt1 %>% group_by(year) %>% summarise(mean(labsh)) -> labsh_change # change in labor share among 20 "rich" countries from 2000-2017
+pwt1 %>% group_by(year) %>% summarise(mean(labsh)) # change in labor share among 20 "rich" countries from 2000-2017
 ```
 
 All data is already tidied, including summarized data, so I untidied the standard deviations of populations by country using pivot_wider, then tidied the data by using pivot_longer at the end of this chunk.
