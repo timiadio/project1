@@ -19,14 +19,21 @@ tidy=TRUE, tidy.opts=list(width.cutoff=60), R.options=list(max.print=100))
 
 ## Data Wrangling, Exploration, Visualization
 
-### Name and EID here
+### Timi Adio oa5782
 
 #### Introduction 
 
-Paragraph or two introducing your datasets and variables, why they are interesting to you, etc.
+One of the datasets I chose was a sample from "Penn World Table (9.1) Macroeconomic Data for Select Countries, 1950-2017" with variables: country, isocode, year, human capital, real gdp, and share of labor compensation. The other dataset I chose was "Yearly populations of countries from 1960 to 2017" with variables: country, country code 1, country code 2, year, and population. I will be analyzing the datat from 2000-2017. I found both these datasets on https://vincentarelbundock.github.io/Rdatasets/datasets.html, which was on the Project 1 directions page. 
+
+I chose these two datasets because "country" was a common variable of theirs. I wanted to see if there ws correlation between population, or change in population, and different measures of economic health (human capital, real gdp, etc.). I'm also interested in how these metrics have changed throughout the years and if some countries seem to be "progressing" economically faster than others. Most importantly, I want to identify the 21st century leaders in some of these categories. This analysis will help me gauge which ones within this pool of countries deemed "rich" have, on paper, performed the best economically so that maybe I could study their economic models and see how their strengths can be implemented in other countries. I expect real gdp to grow with population increase, while share of labor compensation and human capital decrease with population increase.
 
 ```{R}
+library(tidyverse)
+library(cluster)
+library(ggplot2)
 # read your datasets in here, e.g., with read_csv()
+countrypops <- read_csv("https://vincentarelbundock.github.io/Rdatasets/csv/gt/countrypops.csv")
+pwt_sample <- read_csv("https://vincentarelbundock.github.io/Rdatasets/csv/stevedata/pwt_sample.csv")
 
 ```
 
@@ -42,45 +49,69 @@ If your datasets are tidy already, demonstrate that you can reshape data with pi
 #### Joining/Merging
 
 ```{R}
-# your joining code
+nrow(countrypops)
+nrow(pwt_sample)
+countrypops %>% distinct(country_name)
+pwt_sample %>% distinct(country)
+countrypops %>% rename(country=country_name) %>% select(country)%>% anti_join(pwt_sample %>% select(country)) %>% distinct(country) #countrypops has 195 unique countries
+(pwt_sample %>% select(country)) %>% anti_join(countrypops %>% rename(country=country_name)) %>% distinct(country) #pwt has 1 unique country (USA)
+countrypops %>% rename(country=country_name) %>% select(country)%>% inner_join(pwt_sample %>% select(country)) %>% distinct(country)
 
-# your joining code
+pwt <- pwt_new %>% select(-pop) %>% arrange(desc(year))
+pwt %>% left_join(cpops) %>% summarise_all(function(x)sum(is.na(x)))
+pwt %>% left_join(cpops) %>% na.omit -> pwt
+nrow(pwt)
 ```
 
-Discussions of joining here. Feel encouraged to break up into more than once code chunk and discuss each in turn.
+countrypops has 12470 observations while pwt_sample has 1428 observations. countrypops has 215 different countries while pwt_sample has 21 different countries. countrypops has 195 different countries that pwt_sample doesn't have, while pwt_sample has 1 country that countrypops doesn't have. The two datasets have 20 countries in common. The joined dataset, pwt, has 1160 observations, which is 268 less than that of pwt_sample and 11310 less than that of countrypops. No observations were dropped as a result of the joining. 
 
 ####  Wrangling
 
 ```{R}
-# your wrangling code
+cpops <- countrypops %>% rename(country=country_name) %>% select(-country_code_2, -country_code_3)
+pwt_new <- pwt_sample %>% select(-isocode, -X1)
+pwt1 <- pwt %>% select(-X1) %>% filter(year>=2000) %>% mutate(gdp_cap = rgdpna/population) %>% arrange(-desc(country), -desc(year)) # gdp_cap to compare the rates at which gdp and pop are changing
+pwt1 %>% group_by(country) %>% summarise(mean=mean(gdp_cap)) %>% arrange(desc(mean))# mean gdp per capita by country (good measure of standard of living)
+pwt1 %>% group_by(country) %>% summarise(mean = mean(hc)) %>% slice_max(mean) # country with highest mean human capital (UK)
+pwt1 %>% group_by(country) %>% summarise(mean = mean(hc)) %>% slice_min(mean) # country with lowest mean human capital (Portugal)
+pwt1 %>% group_by(country) %>% summarise(mean = mean(rgdpna)) %>% slice_max(mean) # country with highest mean rgdpna (Japan)
+pwt1 %>% group_by(country) %>% summarise(mean = mean(rgdpna)) %>% slice_min(mean) # country with lowest mean rgdpna (Iceland)
+pwt1 %>% group_by(country) %>% summarise(sd = sd(population)) %>% slice_max(sd) # country with most population volatility
+pwt1 %>% group_by(country) %>% summarise(cor(rgdpna,hc)) %>% kable() # correlation between rgdp and hc by country
+pwt1 %>% group_by(year) %>% summarise(min(labsh), max(labsh)) # checking min and max labsh for each year to identify trends (decreasing min, max stays about same)
 
-# your wrangling code
+pwt1 %>% group_by(year) %>% summarise(n()) #18 diff years
+pwt1 %>% group_by(country) %>% summarise(n()) # 20 diff countries
 
-# your wrangling code
+pwt1 %>% group_by(country) %>% summarise(sd=sd(population)) %>% pivot_wider(names_from = country, values_from=sd) -> pwt2
+pivot_longer(pwt2, cols=c("Australia":"United Kingdom"), names_to = "country")
+
+pwt1 %>% group_by(year) %>% summarise(mean(labsh)) -> labsh_change # change in labor share among 20 "rich" countries from 2000-2017
 ```
 
-Your discussion of wrangling section here. Feel encouraged to break up into more than once code chunk and discuss each in turn.
+All data is already tidied, including summarized data, so I untidied the standard deviations of populations by country using pivot_wider, then tidied the data by using pivot_longer at the end of this chunk.
 
+For my analyses I mostly grouped the summaries by country because the main goal of my analysis was to identify the countries that were better than others in certain economic categories since 2000. I summarized the mean gdp per capita, a good measure of standard of living, which helped me identify that Switzerland seemed to have the highest standard of living. Human capital essentially index measures how economically and professionally productive a country's population is. From my summary, the United Kingdom had the greatest mean human capital index, thus its people were the most economically and professionally productive. Real gdp essentially indicates how much production a country has or how much goods and services it provides. This is a good measure of the overall health of an economy. from my summary, Japan seems to have the healthiest economy while Iceland has the least healthy economy of the countries listed. Also, among most countries in the analysis, there seemed to be strong correlation between real gdp and human capital index, which was expected. 
 
 #### Visualizing
 
 ```{R}
-# your plot 1
+ggplot(pwt1, aes(hc,rgdpna)) + geom_point(aes(color=year)) + geom_smooth() + facet_wrap(country~.) + xlab("Human Capital Index") + ylab("Real GDP") + ggtitle("Real GDP vs Human Capital Index") + xlim(2.2,4) + theme_bw()
 ```
 
-Your discussion of plot 1
+The first plot exhibits the relationship between human capital index and real gdp for each country. It's apparent that very few, if any, countries have gdp that decrease as human capital increases. There is strong positive correlation between the two variables for most  countries.
 
 ```{R}
-# your plot 2
+ggplot(pwt1, aes(year,labsh)) + geom_point(aes(y=labsh))+ facet_wrap(country~.) + geom_smooth() + xlab("Year") + ylab("Share of Labor Compensation") + ggtitle("Share of Labor Compensation vs Time") + theme_classic() + ylim(0.3,0.8)
 ```
 
-Your discussion of plot 2
+The second plot exhibits the relationship between hare of labor compensation and time for each country. Share of labor compensation stayed fairly stable throughout the years for each country. There were steep declines in Chile and Iceland between 2006 and 2009, but overall little variation among countries.
 
 ```{R}
-# your plot 3
+ggplot(pwt1, aes(x = country, y = gdp_cap)) + geom_bar(stat="summary",fun=mean,aes(fill=country)) + geom_errorbar(stat="summary", fun.data=mean_cl_normal) + theme_light() + theme(axis.text.x=element_blank(), axis.ticks.x=element_blank()) + xlab("Country") + ylab("Real GDP per Capita") + ggtitle("Mean Real GDP per Capita by Country")
 ```
 
-Your discussion of plot 3
+The third plot exhibits the relationship between real gdp per capita and country. The United Kingdom has the greatest real gdp per capita, while Chile has the lowest. 
 
 #### Concluding Remarks
 
